@@ -37,5 +37,5 @@ echo "=== ALL DONE ==="
 echo "=== NOTE: You MUST run the 'source $OPENSHIFT_DATA_DIR/.rvm/scripts/rvm' command whenever you wish to use RVM!"
 
 # install rails
-#gem install rails --no-ri --no-rdoc
+gem install rails --no-ri --no-rdoc
 
