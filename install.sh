@@ -1,47 +1,41 @@
 #!/bin/sh
 
-cd $OPENSHIFT_TMP_DIR
+# from -> https://github.com/xiy/rvm-openshift/blob/master/binscripts/install-rvm-openshift.sh
 
-# get & compile yaml
-wget http://pyyaml.org/download/libyaml/yaml-0.1.4.tar.gz
-tar xzf yaml-0.1.4.tar.gz
-cd yaml-0.1.4
-./configure --prefix=$OPENSHIFT_RUNTIME_DIR
-make
-make install
+libyaml_package="yaml-0.1.4"
+libyaml_url="http://pyyaml.org/download/libyaml/${libyaml_package}.tar.gz"
+rvm_installer="https://raw.githubusercontent.com/xiy/rvm-openshift/master/binscripts/rvm-installer"
 
-# clean up yaml sources
-cd $OPENSHIFT_TMP_DIR
-rm -rf yaml*
+echo "=== Are we in the data path...?"
+if [[ ! ${pwd} == ${OPENSHIFT_DATA_DIR} ]]; then
+  cd ${OPENSHIFT_DATA_DIR}
+fi
 
-# get ruby
-wget http://ftp.ruby-lang.org/pub/ruby/1.9/ruby-1.9.3-p194.tar.gz
-tar xzf ruby-1.9.3-p194.tar.gz
-cd ruby-1.9.3-p194
+echo "=== Getting ${libyaml_url}..."
+wget ${libyaml_url} & 
+wait $!
+tar zxvf ${libyaml_package}.tar.gz &
+wait $!
+cd ${libyaml_package}
 
-# export directory with yaml.h
-export C_INCLUDE_PATH=$OPENSHIFT_RUNTIME_DIR/include
+if [ ! -d "${OPENSHIFT_DATA_DIR}/.rvm/usr" ]; then
+  mkdir ${OPENSHIFT_DATA_DIR}/.rvm/usr
+fi
 
-# export directory with libyaml
-export LIBYAMLPATH=$OPENSHIFT_RUNTIME_DIR/lib
+echo "=== Building ${libyaml_package}..."
+./configure --prefix=${OPENSHIFT_DATA_DIR}/.rvm/usr &
+wait $!
 
-cd ext/psych
-sed -i '1i $LIBPATH << ENV["LIBYAMLPATH"]' extconf.rb
+make && make install &
+wait $!
 
-cd $OPENSHIFT_TMP_DIR
-cd ruby-1.9.3-p194
+echo "=== Installing RVM and Ruby"
+curl -sSL ${rvm_installer} | bash -s master --ruby &
+wait $!
 
-# compile ruby
-./configure --disable-install-doc --prefix=$OPENSHIFT_RUNTIME_DIR
-make
-make install
-
-export PATH=$OPENSHIFT_RUNTIME_DIR/bin:$PATH
-
-# clean up ruby sources
-cd $OPENSHIFT_TMP_DIR
-rm -rf ruby*
+echo "=== ALL DONE ==="
+echo "=== NOTE: You MUST run the 'source $OPENSHIFT_DATA_DIR/.rvm/scripts/rvm' command whenever you wish to use RVM!"
 
 # install rails
-gem install rails --no-ri --no-rdoc
+#gem install rails --no-ri --no-rdoc
 
